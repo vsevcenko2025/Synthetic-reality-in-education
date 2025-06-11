@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Маленькі фігури на дотик</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <script>
+   
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    camera.position.z = 5;
+
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(1, 1, 2).normalize();
+    scene.add(light);
+
+    
+    function createRandomObject() {
+      const geometries = [
+        new THREE.BoxGeometry(0.3, 0.3, 0.3),          
+        new THREE.SphereGeometry(0.2, 32, 32),         
+        new THREE.TorusGeometry(0.2, 0.05, 16, 100)    
+      ];
+      const colors = [0xff0000, 0x00ff00, 0x0000ff];
+
+      const index = Math.floor(Math.random() * geometries.length);
+      const geometry = geometries[index];
+      const material = new THREE.MeshStandardMaterial({ color: colors[index] });
+      const mesh = new THREE.Mesh(geometry, material);
+
+      mesh.position.x = (Math.random() - 0.5) * 4;
+      mesh.position.y = (Math.random() - 0.5) * 4;
+      mesh.position.z = -Math.random() * 2;
+
+      camera.localToWorld(mesh.position); 
+      scene.add(mesh);
+    }
+
+    
+    window.addEventListener('touchstart', (event) => {
+      event.preventDefault();
+      createRandomObject();
+    }, false);
+
+    
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

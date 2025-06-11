@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Распознавание руки (TensorFlow.js)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas, video {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline width="640" height="480" style="display:none;"></video>
+<canvas id="output" width="640" height="480"></canvas>
+
+<script>
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("output");
+  const ctx = canvas.getContext("2d");
+
+  let detector;
+
+  async function setupCamera() {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480 }
+    });
+    video.srcObject = stream;
+    return new Promise(resolve => {
+      video.onloadedmetadata = () => resolve(video);
+    });
+  }
+
+  function расстояние(a, b) {
+    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+  }
+
+  function угол(v1, v2) {
+    const скаляр = v1.x * v2.x + v1.y * v2.y;
+    const длина1 = Math.sqrt(v1.x ** 2 + v1.y ** 2);
+    const длина2 = Math.sqrt(v2.x ** 2 + v2.y ** 2);
+    return Math.acos(скаляр / (длина1 * длина2)) * (180 / Math.PI);
+  }
+
+  async function main() {
+    await setupCamera();
+    video.play();
+
+    detector = await handPoseDetection.createDetector(
+      handPoseDetection.SupportedModels.MediaPipeHands, {
+        runtime: 'mediapipe',
+        modelType: 'full',
+        solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands'
+    });
+
+    async function render() {
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      const руки = await detector.estimateHands(video, {flipHorizontal: true});
+
+      if (руки.length > 0) {
+        const рука = руки[0];
+        const точки = рука.keypoints;
+
+        for (let pt of точки) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 5, 0, 2 * Math.PI); 
+          ctx.fillStyle = 'red';
+          ctx.fill();
+        }
+
+        ctx.fillStyle = "green";
+        ctx.font = "20px Arial";
+        const названиеРуки = рука.handedness === "Right" ? "ПРАВАЯ РУКА" : "ЛЕВАЯ РУКА";
+        ctx.fillText(`Обнаружено: ${названиеРуки}`, 10, 30);
+
+        const кончики = [4, 8, 12, 16, 20];
+        const основания = [2, 5, 9, 13, 17];
+        let y = 60;
+        for (let i = 0; i < 5; i++) {
+          const длина = расстояние(точки[кончики[i]], точки[основания[i]]);
+          ctx.fillText(`Палец ${i + 1}: ${длина.toFixed(1)} пикс`, 10, y);
+          y += 20;
+        }
+
+        const вектор = (a, b) => ({x: b.x - a.x, y: b.y - a.y});
+        y += 10;
+        for (let i = 1; i < 5; i++) {
+          const в1 = вектор(точки[основания[i - 1]], точки[кончики[i - 1]]);
+          const в2 = вектор(точки[основания[i]], точки[кончики[i]]);
+          const a = угол(в1, в2);
+          ctx.fillText(`Угол между ${i} и ${i + 1}: ${a.toFixed(1)}°`, 10, y);
+          y += 20;
+        }
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    render();
+  }
+
+  main();
+</script>
+
+</body>
+</html>

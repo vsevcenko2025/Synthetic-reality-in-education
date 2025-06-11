@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <title>Розпізнавання віку та статі з текстом</title>
+  <style>
+    video, canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #info {
+      position: absolute;
+      top: 580px;
+      left: 0;
+      width: 720px;
+      font-size: 20px;
+      font-family: Arial, sans-serif;
+      color: #00FF00;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px;
+      border-radius: 5px;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" width="720" height="560" autoplay muted></video>
+  <canvas id="overlay" width="720" height="560"></canvas>
+  <div id="info">Очікую розпізнавання...</div>
+
+  <script type="module">
+    import * as faceapi from 'https://cdn.skypack.dev/@vladmandic/face-api';
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+    const info = document.getElementById('info');
+
+    const MODEL_URL = 'https://vladmandic.github.io/face-api/model/';
+
+    async function startVideo() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+      video.srcObject = stream;
+    }
+
+    async function loadModels() {
+      await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      await faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL);
+    }
+
+    video.addEventListener('play', () => {
+      const displaySize = { width: video.width, height: video.height };
+      faceapi.matchDimensions(canvas, displaySize);
+
+      setInterval(async () => {
+        const detections = await faceapi.detectAllFaces(video).withAgeAndGender();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (!detections.length) {
+          info.textContent = 'Обличчя не знайдено';
+          return;
+        }
+
+        const resized = faceapi.resizeResults(detections, displaySize);
+
+        ctx.strokeStyle = 'lime';
+        ctx.lineWidth = 2;
+
+        let outputText = '';
+
+        resized.forEach(({ age, gender, genderProbability, detection }, i) => {
+          const { x, y, width, height } = detection.box;
+          // Рамка
+          ctx.strokeRect(x, y, width, height);
+          // Підпис на канвасі
+          const label = `${gender} (${(genderProbability * 100).toFixed(0)}%) — Вік: ${age.toFixed(0)}`;
+          ctx.font = '16px Arial';
+          ctx.fillStyle = 'lime';
+          ctx.fillText(label, x, y - 8);
+
+          // Формуємо текст для div
+          outputText += `Обличчя ${i + 1}: Стать — ${gender}, Вік — ${age.toFixed(0)} років\n`;
+        });
+
+        info.textContent = outputText.trim();
+      }, 500);
+    });
+
+    await loadModels();
+    await startVideo();
+  </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Додавання моделі з прицілом</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+    #instruction {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div id="instruction">Клікніть мишею для розміщення моделі</div>
+
+  <!-- Three.js через старий non-module варіант -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <script>
+    let scene, camera, renderer, raycaster, mouse;
+    let model;
+
+    init();
+    animate();
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
+      camera.position.z = 5;
+
+      renderer = new THREE.WebGLRenderer({antialias: true});
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      const light = new THREE.DirectionalLight(0xffffff, 1);
+      light.position.set(0, 1, 1);
+      scene.add(light);
+
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+
+      // Додаємо приціл
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load('texture/sniper.png', function(texture) {
+        const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const sprite = new THREE.Sprite(material);
+        sprite.scale.set(1, 1, 1);
+        scene.add(sprite);
+
+        renderer.domElement.addEventListener('mousemove', function() {
+          sprite.position.set(0, 0, -2);
+          camera.add(sprite);
+        });
+      });
+
+      // Завантажуємо модель
+      const loader = new THREE.GLTFLoader();
+      loader.load('texture/model_cs2.glb', function(gltf) {
+        model = gltf.scene;
+      });
+
+      window.addEventListener('click', onClick, false);
+      window.addEventListener('resize', onWindowResize, false);
+    }
+
+    function onClick(event) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(scene, true);
+
+      if (model) {
+        const clone = model.clone();
+        clone.position.copy(raycaster.ray.direction.clone().multiplyScalar(3));
+        clone.position.add(camera.position);
+        scene.add(clone);
+      }
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+  </script>
+</body>
+</html>

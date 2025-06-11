@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>3D модель на маркері</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+      "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { MindARThree } from 'mindar-image-three';
+
+    const mindarThree = new MindARThree({
+      container: document.body,
+      imageTargetSrc: './markers/Week6.mind'
+    });
+
+    const { renderer, scene, camera } = mindarThree;
+    const anchor = mindarThree.addAnchor(0);
+
+    // 🟡 Додаємо освітлення до сцени
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1); // м'яке розсіяне світло
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // спрямоване світло
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+
+    const loader = new GLTFLoader();
+    loader.load('./texture/ship_3p.glb', (gltf) => {
+      const model = gltf.scene;
+
+      // Мінімальний масштаб
+      model.scale.set(0.02, 0.02, 0.02);
+
+      // Повернути передом
+      model.rotation.y = Math.PI;
+
+      // Трохи відсунути назад
+      model.position.z = -0.1;
+
+      anchor.group.add(model);
+
+      // Клік — обертання навколо осі Y (по кругу)
+      window.addEventListener('click', () => {
+        const randomAngle = (Math.PI / 4) + Math.random() * (Math.PI / 4);
+        model.rotation.y += randomAngle;
+      });
+    });
+
+    await mindarThree.start();
+    renderer.setAnimationLoop(() => {
+      renderer.render(scene, camera);
+    });
+  </script>
+</body>
+</html>

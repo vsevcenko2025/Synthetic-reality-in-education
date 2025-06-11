@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Age & Gender Detection</title>
+  <style>
+    video, canvas { position: absolute; left: 0; top: 0; }
+    #info { position: absolute; top: 10px; left: 10px; background: #000a; color: #fff; padding: 5px; }
+  </style>
+</head>
+<body>
+  <video id="video" width="640" height="480" autoplay muted></video>
+  <canvas id="overlay" width="640" height="480"></canvas>
+  <div id="info">Завантаження...</div>
+
+  <script type="module">
+    import * as faceapi from 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.esm.js';
+
+    const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const info = document.getElementById('info');
+    const ctx = overlay.getContext('2d');
+
+    async function startVideo() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      return new Promise(resolve => video.onloadedmetadata = resolve);
+    }
+
+    async function loadModels() {
+      const modelUrl = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl);
+      await faceapi.nets.ageGenderNet.loadFromUri(modelUrl);
+    }
+
+    async function detect() {
+      const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withAgeAndGender();
+
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      faceapi.matchDimensions(overlay, video);
+
+      const resized = faceapi.resizeResults(detections, video);
+
+      resized.forEach(result => {
+        const { age, gender, genderProbability, detection } = result;
+        const box = detection.box;
+        const roundedAge = Math.round(age);
+        const label = `${gender} (${(genderProbability * 100).toFixed(0)}%) — ${roundedAge} y.o.`;
+
+        const drawBox = new faceapi.draw.DrawBox(box, { label });
+        drawBox.draw(overlay);
+      });
+
+      if (detections.length === 0) {
+        info.innerText = 'Обличчя не знайдено';
+      } else {
+        const { age, gender } = detections[0];
+        info.innerText = `Стать: ${gender}, Вік: ${Math.round(age)}`;
+      }
+
+      requestAnimationFrame(detect);
+    }
+
+    async function run() {
+      await loadModels();
+      await startVideo();
+      detect();
+    }
+
+    run();
+  </script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ARButton Emulation with Instruction</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+        #arButton {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            padding: 12px 24px;
+            font-size: 18px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+        #instruction {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            z-index: 10;
+            padding: 8px 16px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+        }
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+
+<button id="arButton">Enter AR</button>
+<div id="instruction">
+    Натисніть "Enter AR" для запуску.<br>
+    Клацніть мишею на екран, щоб додати 3D об'єкт.
+    <br><br>
+    <strong>Приклад результату:</strong><br>
+    <img src="result_example.png" alt="Результат" style="width: 600px; border: 1px solid #ccc; border-radius: 8px; margin-top: 10px;">
+</div>
+
+
+<video id="webcam" autoplay muted playsinline></video>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
+
+<script>
+
+    let scene, camera, renderer;
+    let isARStarted = false;
+
+    async function initCamera() {
+        const video = document.getElementById('webcam');
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        video.srcObject = stream;
+    }
+
+    function initScene() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
+        camera.position.z = 2;
+
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // Додаємо світло для об'ємних об'єктів
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(1, 2, 3);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        window.addEventListener('resize', onWindowResize, false);
+        renderer.setAnimationLoop(animate);
+
+        window.addEventListener('click', onMouseClick);
+    }
+
+    function onMouseClick(event) {
+        if (!isARStarted) return;
+
+        const geometry = new THREE.SphereGeometry(0.1, 64, 64);
+        const material = new THREE.MeshStandardMaterial({
+            color: Math.random() * 0xffffff,
+            metalness: 0.5,
+            roughness: 0.2
+        });
+
+        const sphere = new THREE.Mesh(geometry, material);
+        sphere.position.set((Math.random() - 0.5), (Math.random() - 0.5), -1);
+        scene.add(sphere);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+        renderer.render(scene, camera);
+    }
+
+    document.getElementById("arButton").addEventListener("click", async () => {
+        await initCamera();
+        initScene();
+
+        document.getElementById("arButton").style.display = "none";
+        document.getElementById("instruction").style.display = "none";
+        isARStarted = true;
+    });
+
+</script>
+</body>
+</html>
