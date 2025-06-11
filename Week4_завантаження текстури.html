@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <script src="https://unpkg.com/three@0.136.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-three.prod.js"></script>
+  <style>
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+  </style>
+</head>
+<body>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+        container: document.body,
+        imageTargetSrc: './markers/Week4.mind'
+      });
+
+      const { renderer, scene, camera } = mindarThree;
+
+      const anchor = mindarThree.addAnchor(0);
+
+      // Завантаження текстури
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load('/texture/dollar.png', (texture) => {
+        const geometry = new THREE.PlaneGeometry(1.5, 1);
+        const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+        const plane = new THREE.Mesh(geometry, material);
+
+        // Додавання текстурованої площини до сцени
+        anchor.group.add(plane);
+
+        // Анімація
+        const animate = () => {
+          requestAnimationFrame(animate);
+          plane.rotation.y += 0.005;
+          renderer.render(scene, camera);
+        };
+        animate();
+      }, undefined, (error) => {
+        console.error('Помилка завантаження текстури:', error);
+      });
+
+      await mindarThree.start();
+      renderer.setAnimationLoop(() => {
+        renderer.render(scene, camera);
+      });
+    });
+  </script>
+</body>
+</html>
