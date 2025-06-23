@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    <style>
+        #menu {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .xr-button {
+            background: #2196F3;
+        }
+        .xr-button:hover {
+            background: #0b7dda;
+        }
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="menu">
+        <h3>Solar System Viewer</h3>
+        <p>Select viewing mode:</p>
+        <button id="desktop-btn">Desktop Mode</button>
+        <button id="mobile-btn">Mobile VR (Cardboard)</button>
+        <button id="xr-btn" class="xr-button">WebXR (VR Headset)</button>
+        <p id="status">Status: Loading...</p>
+    </div>
+
+    <div id="loading">Loading solar system...</div>
+
+    <a-scene 
+        vr-mode-ui="enabled: false" 
+        renderer="antialias: true;"
+        loading-screen="enabled: false"
+        xr-mode-ui="enabled: false"
+        cursor="rayOrigin: mouse"
+        raycaster="objects: .clickable"
+        device-orientation-permission-ui="enabled: false">
+
+        <a-assets timeout="30000">
+            <img id="earthnrm" src="texture/earth.jpg">
+            <img id="stars" src="texture/star.jpg">
+            <img id="moon" src="texture/moon.png"> 
+            <img id="sun" src="texture/2k_sun.jpg"> 
+            <img id="mercury" src="texture/mercury.jpg">
+            <img id="venus" src="texture/venus.jpg">
+            <img id="earth" src="texture/earth.jpg">
+            <img id="mars" src="texture/mars.jpg">
+            <img id="jupiter" src="texture/jupiter.jpg"> 
+            <img id="saturn" src="texture/saturn.jpg">
+            <img id="uranus" src="texture/uranus.jpg">
+            <img id="neptune" src="texture/neptune.jpg">
+            <img id="saturn-ring" src="texture/ring.jpg">
+        </a-assets>
+
+        
+        <a-sky src="#stars" rotation="0 90 0"></a-sky>
+
+        
+        <a-entity id="camera-rig">
+            
+            <a-entity id="desktop-camera" position="0 1.6 0" rotation="-10 -20 0">
+                <a-camera wasd-controls="enabled: false" look-controls="pointerLockEnabled: true">
+                    <a-cursor></a-cursor>
+                </a-camera>
+            </a-entity>
+            
+            
+            <a-entity id="mobile-camera" position="0 1.6 0" visible="false">
+                <a-camera look-controls="pointerLockEnabled: false"></a-camera>
+            </a-entity>
+        </a-entity>
+
+        
+        <a-entity position="0 0 0">
+           
+            <a-sphere src="#sun" radius="7.7" position="0 0 0"></a-sphere>
+
+            
+            <a-torus radius="8.7" radius-tubular="0.02" rotation="90 0 0" color="#555" opacity="0.5"></a-torus>
+            <a-torus radius="11.4" radius-tubular="0.02" rotation="90 0 0" color="#666" opacity="0.5"></a-torus>
+            <a-torus radius="15" radius-tubular="0.02" rotation="90 0 0" color="#777" opacity="0.5"></a-torus>
+            <a-torus radius="18.9" radius-tubular="0.02" rotation="90 0 0" color="#888" opacity="0.5"></a-torus>
+            <a-torus radius="48" radius-tubular="0.02" rotation="90 0 0" color="#999" opacity="0.5"></a-torus>
+            <a-torus radius="89.8" radius-tubular="0.02" rotation="90 0 0" color="#aaa" opacity="0.5"></a-torus>
+            <a-torus radius="150" radius-tubular="0.02" rotation="90 0 0" color="#bbb" opacity="0.5"></a-torus>
+            <a-torus radius="200" radius-tubular="0.02" rotation="90 0 0" color="#ccc" opacity="0.5"></a-torus>
+
+            
+            <a-entity animation="property: rotation; to: 0 360 0; dur: 8800; loop: true; easing: linear">
+                <a-sphere position="8.7 0 0" src="#mercury" radius="0.5" 
+                    animation="property: rotation; to: 0 360 0; dur: 3000; loop: true; easing: linear"
+                    class="clickable" data-planet="Mercury">
+                </a-sphere>
+            </a-entity>
+
+            
+            <a-entity animation="property: rotation; to: 0 360 0; dur: 21500; loop: true; easing: linear">
+                <a-sphere position="11.4 0 0" src="#venus" radius="0.9" 
+                    animation="property: rotation; to: 0 360 0; dur: 3500; loop: true; easing: linear"
+                    class="clickable" data-planet="Venus">
+                </a-sphere>
+            </a-entity>
+
+            
+            <a-entity animation="property: rotation; to: 0 360 0; dur: 39500; loop: true; easing: linear">
+                <a-sphere position="15 0 0" src="#earth" radius="1.1" material="normalMap: #earthnrm"
+                    animation="property: rotation; to: 0 360 0; dur: 3800; loop: true; easing: linear"
+                    class="clickable" data-planet="Earth">
+                    
+                    <a-entity animation="property: rotation; to: 0 360 0; dur: 3000; loop: true; easing: linear">
+                        <a-sphere position="1.5 0 0" material="src: #moon" radius="0.3"></a-sphere>
+                    </a-entity>
+                </a-sphere>
+            </a-entity>
+
+            
+            <a-entity animation="property: rotation; to: 0 360 0; dur: 55600; loop: true; easing: linear">
+                <a-sphere position="18.9 0 0" src="#mars" radius="0.6" 
+                    animation="property: rotation; to: 0 360 0; dur: 3500; loop: true; easing: linear"
+                    class="clickable" data-planet="Mars">
+                </a-sphere>
+            </a-entity>
+
+            
+            <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 80000; easing: linear">
+                <!-- Multiple asteroid positions around the orbit -->
+                <a-entity position="35 0 0">
+                    <a-sphere position="0 1 -1" radius="0.08" color="#4A4A4A"></a-sphere>
+                    <a-sphere position="1 -1 1" radius="0.07" color="#696969"></a-sphere>
+                    <a-sphere position="-1 2 -2" radius="0.06" color="#8B7355"></a-sphere>
+                </a-entity>
+                
+            </a-entity>
+
+           
+            <a-entity animation="property: rotation; to: 0 360 0; dur: 80300; loop: true; easing: linear">
+                <a-sphere position="48 0 0" src="#jupiter" radius="3.6" 
+                    animation="property: rotation; to: 0 360 0; dur: 3850; loop: true; easing: linear"
+                    class="clickable" data-planet="Jupiter">
+                </a-sphere>
+            </a-entity>
+
+            
+            <a-entity animation="property: rotation; to: 0 360 0; dur: 105600; loop: true; easing: linear">
+                <a-sphere position="89.8 0 0" src="#saturn" radius="3" 
+                    animation="property: rotation; to: 0 360 0; dur: 3810; loop: true; easing: linear"
+                    class="clickable" data-planet="Saturn">
+                    <a-ring radius-inner="3.5" radius-outer="5" rotation="55 25 0" side="double" src="#saturn-ring"></a-ring>
+                </a-sphere>
+            </a-entity>
+
+            
+            <a-entity animation="property: rotation; to: 0 360 0; dur: 301100; loop: true; easing: linear">
+                <a-sphere position="150 0 0" src="#uranus" radius="2" 
+                    animation="property: rotation; to: 0 360 0; dur: 3800; loop: true; easing: linear"
+                    class="clickable" data-planet="Uranus">
+                </a-sphere>
+            </a-entity>
+
+            
+            <a-entity animation="property: rotation; to: 0 360 0; dur: 600100; loop: true; easing: linear">
+                <a-sphere position="200 0 0" src="#neptune" radius="2" 
+                    animation="property: rotation; to: 0 360 0; dur: 3800; loop: true; easing: linear"
+                    class="clickable" data-planet="Neptune">
+                </a-sphere>
+            </a-entity>
+        </a-entity>
+
+        
+        <a-entity id="info-panel" position="0 1.5 -2" visible="false">
+            <a-plane width="1.5" height="0.8" color="#333" opacity="0.8"></a-plane>
+            <a-text id="planet-name" value="Planet" color="white" position="0 0.3 0.01" align="center" width="1.4"></a-text>
+            <a-text id="planet-info" value="Information" color="white" position="0 -0.1 0.01" align="center" width="1.4"></a-text>
+            <a-text value="Click to close" color="white" position="0 -0.3 0.01" align="center" width="1.4"></a-text>
+        </a-entity>
+    </a-scene>
+
+    <script>
+      
+        document.querySelector('a-scene').addEventListener('loaded', function() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('status').textContent = 'Status: Ready';
+            
+            
+            setupDesktopMode();
+            
+            
+            document.getElementById('desktop-btn').addEventListener('click', setupDesktopMode);
+            document.getElementById('mobile-btn').addEventListener('click', setupMobileMode);
+            document.getElementById('xr-btn').addEventListener('click', setupXRMode);
+            
+            
+            document.querySelectorAll('.clickable').forEach(planet => {
+                planet.addEventListener('click', function() {
+                    const planetName = this.getAttribute('data-planet');
+                    showPlanetInfo(planetName);
+                });
+            });
+            
+            
+            document.querySelector('#info-panel').addEventListener('click', function() {
+                this.setAttribute('visible', 'false');
+            });
+        });
+        
+        function setupDesktopMode() {
+            document.getElementById('status').textContent = 'Status: Desktop Mode';
+            
+            
+            document.getElementById('desktop-camera').setAttribute('visible', 'true');
+            document.getElementById('mobile-camera').setAttribute('visible', 'false');
+            
+            
+            const camera = document.querySelector('#desktop-camera a-camera');
+            camera.setAttribute('look-controls', 'pointerLockEnabled: true');
+            camera.setAttribute('wasd-controls', 'enabled: true');
+            
+            
+            const scene = document.querySelector('a-scene');
+            if (scene.is('vr-mode')) {
+                scene.exitVR();
+            }
+        }
+        
+        function setupMobileMode() {
+            document.getElementById('status').textContent = 'Status: Mobile VR Mode';
+            
+            
+            document.getElementById('desktop-camera').setAttribute('visible', 'false');
+            document.getElementById('mobile-camera').setAttribute('visible', 'true');
+            
+            
+            const camera = document.querySelector('#mobile-camera a-camera');
+            camera.setAttribute('look-controls', {
+                pointerLockEnabled: false,
+                touchEnabled: true,
+                magicWindowTrackingEnabled: true
+            });
+            
+            
+            document.getElementById('camera-rig').setAttribute('position', '0 1.6 0');
+        }
+        
+        function setupXRMode() {
+            document.getElementById('status').textContent = 'Status: Attempting WebXR...';
+            
+            
+            if (!navigator.xr) {
+                document.getElementById('status').textContent = 'Status: WebXR not supported';
+                alert('WebXR is not supported on your device/browser');
+                return;
+            }
+            
+            
+            const scene = document.querySelector('a-scene');
+            if (scene.hasLoaded) {
+                scene.enterVR().then(() => {
+                    document.getElementById('status').textContent = 'Status: WebXR Active';
+                }).catch(err => {
+                    document.getElementById('status').textContent = 'Status: WebXR Failed';
+                    console.error('Error entering VR:', err);
+                });
+            }
+        }
+        
+        function showPlanetInfo(planetName) {
+            const infoPanel = document.getElementById('info-panel');
+            const nameElement = document.getElementById('planet-name');
+            const infoElement = document.getElementById('planet-info');
+            
+            
+            const planetInfo = {
+                'Mercury': 'Closest to the Sun\nDiameter: 4,880 km\nOrbit: 88 days',
+                'Venus': 'Second planet\nDiameter: 12,104 km\nOrbit: 225 days',
+                'Earth': 'Our home planet\nDiameter: 12,742 km\nOrbit: 365.25 days',
+                'Mars': 'The Red Planet\nDiameter: 6,779 km\nOrbit: 687 days',
+                'Jupiter': 'Largest planet\nDiameter: 139,820 km\nOrbit: 12 years',
+                'Saturn': 'Ringed planet\nDiameter: 116,460 km\nOrbit: 29 years',
+                'Uranus': 'Ice giant\nDiameter: 50,724 km\nOrbit: 84 years',
+                'Neptune': 'Windy planet\nDiameter: 49,244 km\nOrbit: 165 years'
+            };
+            
+            nameElement.setAttribute('value', planetName);
+            infoElement.setAttribute('value', planetInfo[planetName] || 'No information available');
+            infoPanel.setAttribute('visible', 'true');
+        }
+    </script>
+</body>
+</html>
