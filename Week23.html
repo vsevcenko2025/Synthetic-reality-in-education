@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Розпізнавання людських жестів</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        #video-container {
+            position: relative;
+            margin: 20px auto;
+            width: 640px;
+        }
+        #video {
+            width: 100%;
+            border-radius: 8px;
+            transform: scaleX(-1);
+            background: #000;
+        }
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #gesture-result {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 20px;
+            min-height: 40px;
+            color: #2c3e50;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #3367d6;
+        }
+        .gestures-info {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .gesture-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            width: 120px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .gesture-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        .gesture-name {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Розпізнавання людських жестів</h1>
+        <p>Система автоматично розпізнає стандартні жести в реальному часі</p>
+        
+        <div id="video-container">
+            <video id="video" width="640" height="480" playsinline></video>
+            <canvas id="canvas" width="640" height="480"></canvas>
+        </div>
+        
+        <div id="gesture-result">Покажіть жест у камеру...</div>
+        
+        <button id="start-button">Увімкнути камеру</button>
+        
+        <h2>Розпізнавані жести:</h2>
+        <div class="gestures-info">
+            <div class="gesture-card">
+                <div class="gesture-icon">✋</div>
+                <div class="gesture-name">Долоня</div>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-icon">✊</div>
+                <div class="gesture-name">Кулак</div>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-icon">👍</div>
+                <div class="gesture-name">Клас</div>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-icon">👎</div>
+                <div class="gesture-name">Дизлайк</div>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-icon">✌️</div>
+                <div class="gesture-name">Перемога</div>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-icon">👌</div>
+                <div class="gesture-name">OK</div>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-icon">🤙</div>
+                <div class="gesture-name">Телефон</div>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-icon">🤟</div>
+                <div class="gesture-name">I love you</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM елементи
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('start-button');
+        const gestureResult = document.getElementById('gesture-result');
+        
+        let hands = null;
+        let isRunning = false;
+
+       
+        function initHandPose() {
+            hands = new Hands({
+                locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+                }
+            });
+
+            hands.setOptions({
+                maxNumHands: 2,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.7
+            });
+
+            hands.onResults(onResults);
+        }
+
+       
+        function onResults(results) {
+            if (!isRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+               
+                drawLandmarks(results.multiHandLandmarks);
+                
+                
+                const gesture = detectGesture(results.multiHandLandmarks[0]);
+                gestureResult.textContent = gesture;
+            } else {
+                gestureResult.textContent = "Жест не виявлено";
+            }
+        }
+
+       
+        function drawLandmarks(landmarks) {
+            for (const hand of landmarks) {
+                
+                for (const point of hand) {
+                    ctx.beginPath();
+                    ctx.arc(point.x * canvas.width, point.y * canvas.height, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'red';
+                    ctx.fill();
+                }
+                
+                
+                ctx.strokeStyle = 'blue';
+                ctx.lineWidth = 2;
+                
+                for (const connection of HAND_CONNECTIONS) {
+                    const [startIdx, endIdx] = connection;
+                    const start = hand[startIdx];
+                    const end = hand[endIdx];
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(start.x * canvas.width, start.y * canvas.height);
+                    ctx.lineTo(end.x * canvas.width, end.y * canvas.height);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        
+        function detectGesture(landmarks) {
+            
+            const fingerTips = {
+                thumb: landmarks[4],
+                index: landmarks[8],
+                middle: landmarks[12],
+                ring: landmarks[16],
+                pinky: landmarks[20]
+            };
+            
+            
+            const fingerBases = {
+                thumb: landmarks[2],
+                index: landmarks[6],
+                middle: landmarks[10],
+                ring: landmarks[14],
+                pinky: landmarks[18]
+            };
+            
+            
+            const isExtended = (tip, base) => tip.y < base.y - 0.05;
+            
+            const extendedFingers = {
+                thumb: isExtended(fingerTips.thumb, fingerBases.thumb),
+                index: isExtended(fingerTips.index, fingerBases.index),
+                middle: isExtended(fingerTips.middle, fingerBases.middle),
+                ring: isExtended(fingerTips.ring, fingerBases.ring),
+                pinky: isExtended(fingerTips.pinky, fingerBases.pinky)
+            };
+            
+            
+            if (!extendedFingers.thumb && !extendedFingers.index && 
+                !extendedFingers.middle && !extendedFingers.ring && !extendedFingers.pinky) {
+                return "✊ Кулак";
+            }
+            
+            if (extendedFingers.thumb && extendedFingers.index && 
+                extendedFingers.middle && extendedFingers.ring && extendedFingers.pinky) {
+                return "✋ Відкрита долоня";
+            }
+            
+            if (extendedFingers.thumb && !extendedFingers.index && 
+                !extendedFingers.middle && !extendedFingers.ring && !extendedFingers.pinky) {
+                return "👍 Великий палець вгору";
+            }
+            
+            if (!extendedFingers.thumb && extendedFingers.index && 
+                extendedFingers.middle && !extendedFingers.ring && !extendedFingers.pinky) {
+                return "✌️ Жест перемоги";
+            }
+            
+            if (extendedFingers.thumb && extendedFingers.index && 
+                !extendedFingers.middle && !extendedFingers.ring && !extendedFingers.pinky) {
+                return "👌 Жест OK";
+            }
+            
+            if (!extendedFingers.thumb && !extendedFingers.index && 
+                !extendedFingers.middle && !extendedFingers.ring && extendedFingers.pinky) {
+                return "🤙 Жест телефону";
+            }
+            
+            if (extendedFingers.thumb && !extendedFingers.index && 
+                extendedFingers.middle && !extendedFingers.ring && !extendedFingers.pinky) {
+                return "🤟 I love you";
+            }
+            
+            if (!extendedFingers.thumb && extendedFingers.index && 
+                !extendedFingers.middle && !extendedFingers.ring && !extendedFingers.pinky) {
+                return "👆 Вказівний палець";
+            }
+            
+            return "🤔 Невідомий жест";
+        }
+
+        
+        async function setupCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Веб-камера не підтримується у вашому браузері');
+            }
+            
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: {
+                    facingMode: 'user',
+                    width: 640,
+                    height: 480
+                }
+            });
+            
+            video.srcObject = stream;
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    video.play();
+                    resolve();
+                };
+            });
+        }
+
+        
+        async function processFrame() {
+            if (!isRunning) return;
+            
+            await hands.send({ image: video });
+            requestAnimationFrame(processFrame);
+        }
+
+        
+        async function start() {
+            try {
+                await setupCamera();
+                initHandPose();
+                isRunning = true;
+                startButton.textContent = 'Зупинити';
+                processFrame();
+            } catch (error) {
+                console.error('Помилка запуску:', error);
+                gestureResult.textContent = 'Помилка: ' + error.message;
+            }
+        }
+
+        
+        function stop() {
+            isRunning = false;
+            startButton.textContent = 'Увімкнути камеру';
+            gestureResult.textContent = 'Покажіть жест у камеру...';
+            const stream = video.srcObject;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            video.srcObject = null;
+        }
+
+        
+        const HAND_CONNECTIONS = [
+            [0, 1], [1, 2], [2, 3], [3, 4],         // Великий палець
+            [0, 5], [5, 6], [6, 7], [7, 8],         // Вказівний палець
+            [0, 9], [9, 10], [10, 11], [11, 12],    // Середній палець
+            [0, 13], [13, 14], [14, 15], [15, 16],  // Безіменний палець
+            [0, 17], [17, 18], [18, 19], [19, 20],  // Мізинець
+            [1, 5], [5, 9], [9, 13], [13, 17]       // Нижня частина долоні
+        ];
+
+        
+        startButton.addEventListener('click', () => {
+            if (!isRunning) {
+                start();
+            } else {
+                stop();
+            }
+        });
+    </script>
+</body>
+</html>

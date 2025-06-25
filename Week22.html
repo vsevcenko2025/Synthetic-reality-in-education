@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Робот з розпізнаванням жестів та AR</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.1.0/dist/fingerpose.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-three.prod.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1200px;
+        }
+        .camera-section, .robot-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .camera-section {
+            flex: 1;
+            min-width: 600px;
+        }
+        .robot-section {
+            width: 400px;
+        }
+        #camera-container, #robot-container, #ar-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin: 20px 0;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #000;
+        }
+        #gesture-result {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+            min-height: 36px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #3367d6;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            z-index: 10;
+        }
+        .gestures-list {
+            margin-top: 20px;
+        }
+        .gesture-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .gesture-icon {
+            font-size: 30px;
+            margin-right: 15px;
+            width: 40px;
+            text-align: center;
+        }
+        .gesture-info {
+            flex: 1;
+        }
+        .gesture-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .gesture-desc {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        h2 {
+            border-bottom: 2px solid #4285f4;
+            padding-bottom: 10px;
+        }
+        .marker-image {
+            max-width: 100%;
+            margin-top: 20px;
+            border: 2px solid #4285f4;
+            border-radius: 8px;
+        }
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            background: #e0e0e0;
+            border: none;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            background: #4285f4;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="camera-section">
+            <h1>Розпізнавання жестів та AR робот</h1>
+            
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="gesture">Режим жестів</button>
+                <button class="tab-button" data-tab="ar">AR режим</button>
+            </div>
+            
+            <div class="tab-content active" id="gesture-tab">
+                <p>Покажіть жест у камеру, щоб робот його повторив</p>
+                
+                <div id="camera-container">
+                    <video id="video" width="600" height="400" playsinline></video>
+                    <canvas id="canvas" width="600" height="400"></canvas>
+                    <div id="loading">Завантаження...</div>
+                </div>
+                
+                <div id="gesture-result">Покажіть жест у камеру...</div>
+                
+                <button id="start-button">Увімкнути камеру</button>
+            </div>
+            
+            <div class="tab-content" id="ar-tab">
+                <p>Наведіть камеру на маркер, щоб побачити AR робота</p>
+                
+                <div id="ar-container">
+                    <video id="ar-video" width="600" height="400" playsinline></video>
+                    <canvas id="ar-canvas" width="600" height="400"></canvas>
+                </div>
+                
+                <img src="markers/Week15.png" alt="AR Marker" class="marker-image">
+                <p>Завантажте та роздрукуйте цей маркер для AR</p>
+                
+                <button id="ar-start-button">Увімкнути AR</button>
+            </div>
+        </div>
+        
+        <div class="robot-section">
+            <h2>3D Модель робота</h2>
+            <div id="robot-container"></div>
+            
+            <h2>Доступні анімації</h2>
+            <div class="gestures-list">
+                <div class="gesture-item">
+                    <div class="gesture-icon">💃</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">Dance (Танець)</div>
+                        <div class="gesture-desc">Кругові рухи обома руками</div>
+                    </div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-icon">🧍</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">Idle (Очікування)</div>
+                        <div class="gesture-desc">Руки вільно опущені</div>
+                    </div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-icon">🦘</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">Jump (Стрибок)</div>
+                        <div class="gesture-desc">Руки вгору зі стиснутими кулаками</div>
+                    </div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-icon">👎</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">No (Ні)</div>
+                        <div class="gesture-desc">Хитаючий рух вказівним пальцем</div>
+                    </div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-icon">👊</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">Punch (Удар)</div>
+                        <div class="gesture-desc">Різкий рух кулаком вперед</div>
+                    </div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-icon">🏃</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">Running (Біг)</div>
+                        <div class="gesture-desc">Імітація рухів бігу</div>
+                    </div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-icon">🧘</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">Sitting (Сидіння)</div>
+                        <div class="gesture-desc">Руки на колінах</div>
+                    </div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-icon">🚶</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">Walking (Ходьба)</div>
+                        <div class="gesture-desc">Імітація рухів ходьби</div>
+                    </div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-icon">👍</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">ThumbsUp (Клас)</div>
+                        <div class="gesture-desc">Великий палець вгору</div>
+                    </div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-icon">👋</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">Wave (Помах)</div>
+                        <div class="gesture-desc">Помахування рукою</div>
+                    </div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-icon">👌</div>
+                    <div class="gesture-info">
+                        <div class="gesture-name">Yes (Так)</div>
+                        <div class="gesture-desc">Кивки головою</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('start-button');
+        const gestureResult = document.getElementById('gesture-result');
+        const loadingElement = document.getElementById('loading');
+        const robotContainer = document.getElementById('robot-container');
+        const arVideo = document.getElementById('ar-video');
+        const arCanvas = document.getElementById('ar-canvas');
+        const arStartButton = document.getElementById('ar-start-button');
+        const arContainer = document.getElementById('ar-container');
+        
+        
+        let hands = null;
+        let detector = null;
+        let isRunning = false;
+        let animationActions = {};
+        let currentAction = null;
+        let mixer = null;
+        let arSystem = null;
+        let arScene = null;
+        let arRobot = null;
+        let arMixer = null;
+        let arAnimationActions = {};
+        
+        
+        let scene, camera, renderer, robotModel;
+        
+        
+        async function initThreeJS() {
+            return new Promise((resolve) => {
+                
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0xf0f0f0);
+                
+                
+                camera = new THREE.PerspectiveCamera(75, robotContainer.clientWidth / robotContainer.clientHeight, 0.1, 1000);
+                camera.position.set(0, 1, 2);
+                
+                
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(robotContainer.clientWidth, robotContainer.clientHeight);
+                robotContainer.appendChild(renderer.domElement);
+                
+                
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(0, 1, 1);
+                scene.add(directionalLight);
+                
+                
+                const loader = new THREE.GLTFLoader();
+                loader.load(
+                    'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r132/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
+                    (gltf) => {
+                        robotModel = gltf.scene;
+                        robotModel.scale.set(0.5, 0.5, 0.5);
+                        robotModel.position.y = -0.5;
+                        scene.add(robotModel);
+                        
+                        
+                        mixer = new THREE.AnimationMixer(robotModel);
+                        
+                        
+                        gltf.animations.forEach((clip) => {
+                            animationActions[clip.name] = mixer.clipAction(clip);
+                        });
+                        
+                        
+                        playAnimation('Idle');
+                        
+                        loadingElement.style.display = 'none';
+                        resolve();
+                    },
+                    undefined,
+                    (error) => {
+                        console.error('Помилка завантаження моделі:', error);
+                        loadingElement.textContent = 'Помилка завантаження моделі';
+                        resolve();
+                    }
+                );
+                
+                
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    
+                    if (mixer) {
+                        mixer.update(0.016); 
+                    }
+                    
+                    renderer.render(scene, camera);
+                };
+                animate();
+            });
+        }
+        
+        
+        function playAnimation(name) {
+            if (!animationActions[name]) {
+                console.warn(`Анімація ${name} не знайдена`);
+                return;
+            }
+            
+            if (currentAction) {
+                currentAction.stop();
+            }
+            
+            currentAction = animationActions[name];
+            currentAction.reset().play();
+        }
+        
+        
+        function initHandPose() {
+            
+            hands = new Hands({
+                locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+                }
+            });
+
+            hands.setOptions({
+                maxNumHands: 2,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.7
+            });
+
+            hands.onResults(onResults);
+
+            
+            detector = new fp.GestureEstimator([
+                fp.Gestures.ThumbsUpGesture, // ThumbsUp
+                fp.Gestures.VictoryGesture,  // Victory (Wave)
+                fp.Gestures.OKGesture,       // OK (Yes)
+                createDanceGesture(),
+                createIdleGesture(),
+                createJumpGesture(),
+                createNoGesture(),
+                createPunchGesture(),
+                createRunningGesture(),
+                createSittingGesture(),
+                createWalkingGesture(),
+                createWaveGesture()
+            ]);
+        }
+        
+        
+        function createDanceGesture() {
+            const dance = new fp.GestureDescription('dance');
+            
+            for(let finger of [fp.Finger.Thumb, fp.Finger.Index, fp.Finger.Middle, fp.Finger.Ring, fp.Finger.Pinky]) {
+                dance.addCurl(finger, fp.FingerCurl.NoCurl, 1.0);
+            }
+            
+            dance.addDirection(fp.Finger.Index, fp.FingerDirection.DiagonalUpLeft, 0.9);
+            dance.addDirection(fp.Finger.Middle, fp.FingerDirection.DiagonalUpRight, 0.9);
+            return dance;
+        }
+        
+        function createIdleGesture() {
+            const idle = new fp.GestureDescription('idle');
+            
+            for(let finger of [fp.Finger.Index, fp.Finger.Middle, fp.Finger.Ring, fp.Finger.Pinky]) {
+                idle.addCurl(finger, fp.FingerCurl.HalfCurl, 1.0);
+                idle.addDirection(finger, fp.FingerDirection.VerticalDown, 0.9);
+            }
+            
+            idle.addCurl(fp.Finger.Thumb, fp.FingerCurl.HalfCurl, 0.5);
+            idle.addCurl(fp.Finger.Thumb, fp.FingerCurl.NoCurl, 0.5);
+            return idle;
+        }
+        
+        function createJumpGesture() {
+            const jump = new fp.GestureDescription('jump');
+            
+            for(let finger of [fp.Finger.Index, fp.Finger.Middle, fp.Finger.Ring, fp.Finger.Pinky]) {
+                jump.addCurl(finger, fp.FingerCurl.FullCurl, 1.0);
+            }
+            
+            jump.addCurl(fp.Finger.Thumb, fp.FingerCurl.HalfCurl, 1.0);
+            jump.addDirection(fp.Finger.Thumb, fp.FingerDirection.HorizontalLeft, 0.9);
+            return jump;
+        }
+        
+        function createNoGesture() {
+            const no = new fp.GestureDescription('no');
+            
+            no.addCurl(fp.Finger.Index, fp.FingerCurl.NoCurl, 1.0);
+            no.addDirection(fp.Finger.Index, fp.FingerDirection.HorizontalLeft, 0.9);
+            no.addDirection(fp.Finger.Index, fp.FingerDirection.HorizontalRight, 0.9);
+            
+            for(let finger of [fp.Finger.Middle, fp.Finger.Ring, fp.Finger.Pinky]) {
+                no.addCurl(finger, fp.FingerCurl.FullCurl, 1.0);
+            }
+            
+            no.addCurl(fp.Finger.Thumb, fp.FingerCurl.HalfCurl, 0.5);
+            return no;
+        }
+        
+        function createPunchGesture() {
+            const punch = new fp.GestureDescription('punch');
+            
+            for(let finger of [fp.Finger.Index, fp.Finger.Middle, fp.Finger.Ring, fp.Finger.Pinky]) {
+                punch.addCurl(finger, fp.FingerCurl.FullCurl, 1.0);
+            }
+            
+            punch.addCurl(fp.Finger.Thumb, fp.FingerCurl.HalfCurl, 1.0);
+            punch.addDirection(fp.Finger.Thumb, fp.FingerDirection.HorizontalLeft, 0.9);
+            return punch;
+        }
+        
+        function createRunningGesture() {
+            const running = new fp.GestureDescription('running');
+            
+            running.addCurl(fp.Finger.Index, fp.FingerCurl.HalfCurl, 1.0);
+            running.addCurl(fp.Finger.Middle, fp.FingerCurl.HalfCurl, 1.0);
+            running.addDirection(fp.Finger.Index, fp.FingerDirection.DiagonalUpRight, 0.9);
+            running.addDirection(fp.Finger.Middle, fp.FingerDirection.DiagonalUpRight, 0.9);
+            
+            for(let finger of [fp.Finger.Ring, fp.Finger.Pinky]) {
+                running.addCurl(finger, fp.FingerCurl.HalfCurl, 0.5);
+                running.addCurl(finger, fp.FingerCurl.FullCurl, 0.5);
+            }
+            
+            running.addCurl(fp.Finger.Thumb, fp.FingerCurl.HalfCurl, 0.5);
+            return running;
+        }
+        
+        function createSittingGesture() {
+            const sitting = new fp.GestureDescription('sitting');
+            
+            for(let finger of [fp.Finger.Index, fp.Finger.Middle, fp.Finger.Ring, fp.Finger.Pinky]) {
+                sitting.addCurl(finger, fp.FingerCurl.NoCurl, 1.0);
+                sitting.addDirection(finger, fp.FingerDirection.VerticalDown, 0.9);
+            }
+            
+            sitting.addCurl(fp.Finger.Thumb, fp.FingerCurl.HalfCurl, 0.5);
+            return sitting;
+        }
+        
+        function createWalkingGesture() {
+            const walking = new fp.GestureDescription('walking');
+            
+            walking.addCurl(fp.Finger.Index, fp.FingerCurl.NoCurl, 1.0);
+            walking.addCurl(fp.Finger.Middle, fp.FingerCurl.NoCurl, 1.0);
+            walking.addDirection(fp.Finger.Index, fp.FingerDirection.DiagonalUpLeft, 0.9);
+            walking.addDirection(fp.Finger.Middle, fp.FingerDirection.DiagonalUpLeft, 0.9);
+            
+            for(let finger of [fp.Finger.Ring, fp.Finger.Pinky]) {
+                walking.addCurl(finger, fp.FingerCurl.HalfCurl, 0.5);
+                walking.addCurl(finger, fp.FingerCurl.FullCurl, 0.5);
+            }
+
+            walking.addCurl(fp.Finger.Thumb, fp.FingerCurl.HalfCurl, 0.5);
+            return walking;
+        }
+        
+        function createWaveGesture() {
+            const wave = new fp.GestureDescription('wave');
+            
+            wave.addCurl(fp.Finger.Index, fp.FingerCurl.NoCurl, 1.0);
+            wave.addDirection(fp.Finger.Index, fp.FingerDirection.HorizontalRight, 0.9);
+            // Інші пальці зігнуті
+            for(let finger of [fp.Finger.Middle, fp.Finger.Ring, fp.Finger.Pinky]) {
+                wave.addCurl(finger, fp.FingerCurl.FullCurl, 1.0);
+            }
+            
+            wave.addCurl(fp.Finger.Thumb, fp.FingerCurl.HalfCurl, 0.5);
+            return wave;
+        }
+
+        
+        function onResults(results) {
+            if (!isRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+           
+            if (results.multiHandLandmarks) {
+                for (const landmarks of results.multiHandLandmarks) {
+                    drawLandmarks(landmarks);
+                }
+                
+               
+                if (results.multiHandLandmarks.length > 0) {
+                    const estimatedGestures = detector.estimate(
+                        results.multiHandLandmarks[0].map(lm => [lm.x, lm.y, lm.z]),
+                        8 // confidence threshold
+                    );
+                    
+                    
+                    if (estimatedGestures.gestures.length > 0) {
+                        const gesture = estimatedGestures.gestures.reduce((prev, current) => {
+                            return (prev.confidence > current.confidence) ? prev : current;
+                        });
+                        
+                        if (gesture.confidence > 8) {
+                            gestureResult.textContent = `Розпізнано жест: ${gesture.name}`;
+                            playAnimation(gesture.name);
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            gestureResult.textContent = "Покажіть жест у камеру...";
+            playAnimation('Idle');
+        }
+        
+        
+        function drawLandmarks(landmarks) {
+            ctx.fillStyle = 'red';
+            
+            for (const point of landmarks) {
+                ctx.beginPath();
+                ctx.arc(point.x * canvas.width, point.y * canvas.height, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 2;
+            
+            for (const connection of HAND_CONNECTIONS) {
+                const [startIdx, endIdx] = connection;
+                const start = landmarks[startIdx];
+                const end = landmarks[endIdx];
+                
+                ctx.beginPath();
+                ctx.moveTo(start.x * canvas.width, start.y * canvas.height);
+                ctx.lineTo(end.x * canvas.width, end.y * canvas.height);
+                ctx.stroke();
+            }
+        }
+        
+        
+        async function setupCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Веб-камера не підтримується у вашому браузері');
+            }
+            
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: {
+                    facingMode: 'user',
+                    width: 600,
+                    height: 400
+                }
+            });
+            
+            video.srcObject = stream;
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    video.play();
+                    resolve();
+                };
+            });
+        }
+        
+        
+        function processFrame() {
+            if (!isRunning) return;
+            
+            if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
+                
+                canvas.width = videoWidth;
+                canvas.height = videoHeight;
+                
+                ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
+                
+                if (hands) {
+                    hands.send({ image: canvas });
+                }
+            }
+            
+            requestAnimationFrame(processFrame);
+        }
+        
+        
+        async function initAR() {
+            const mindarThree = new MindARThree({
+                container: arContainer,
+                imageTargetSrc: 'markers/Week15.mind'
+            });
+            
+            const {renderer, scene, camera} = mindarThree;
+            
+           
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r132/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
+                (gltf) => {
+                    arRobot = gltf.scene;
+                    arRobot.scale.set(0.3, 0.3, 0.3);
+                    arRobot.visible = false;
+                    
+                    
+                    arMixer = new THREE.AnimationMixer(arRobot);
+                    gltf.animations.forEach((clip) => {
+                        arAnimationActions[clip.name] = arMixer.clipAction(clip);
+                    });
+                    
+                   
+                    const anchor = mindarThree.addAnchor(0);
+                    anchor.group.add(arRobot);
+                    
+                    
+                    playARAnimation('Idle');
+                }
+            );
+            
+           
+            mindarThree.onTargetFound = () => {
+                if (arRobot) arRobot.visible = true;
+            };
+            
+            
+            mindarThree.onTargetLost = () => {
+                if (arRobot) arRobot.visible = false;
+            };
+            
+            await mindarThree.start();
+            arSystem = mindarThree;
+            
+            
+            const animate = () => {
+                requestAnimationFrame(animate);
+                if (arMixer) arMixer.update(0.016);
+                renderer.render(scene, camera);
+            };
+            animate();
+        }
+        
+        
+        function playARAnimation(name) {
+            if (!arAnimationActions[name]) {
+                console.warn(`AR анімація ${name} не знайдена`);
+                return;
+            }
+            
+            if (arAnimationActions.current) {
+                arAnimationActions.current.stop();
+            }
+            
+            arAnimationActions.current = arAnimationActions[name];
+            arAnimationActions.current.reset().play();
+        }
+        
+        
+        async function start() {
+            try {
+                loadingElement.textContent = "Запуск камери...";
+                await setupCamera();
+                
+                loadingElement.textContent = "Завантаження моделі робота...";
+                await initThreeJS();
+                
+                loadingElement.textContent = "Ініціалізація розпізнавання жестів...";
+                initHandPose();
+                
+                isRunning = true;
+                startButton.textContent = 'Зупинити';
+                processFrame();
+                
+                loadingElement.style.display = 'none';
+            } catch (error) {
+                console.error('Помилка запуску:', error);
+                gestureResult.textContent = 'Помилка: ' + error.message;
+                loadingElement.style.display = 'none';
+            }
+        }
+        
+        
+        async function startAR() {
+            try {
+                loadingElement.textContent = "Запуск AR...";
+                await initAR();
+                loadingElement.style.display = 'none';
+                arStartButton.textContent = 'Зупинити AR';
+            } catch (error) {
+                console.error('Помилка запуску AR:', error);
+                loadingElement.textContent = 'Помилка AR: ' + error.message;
+            }
+        }
+        
+       
+        function stop() {
+            isRunning = false;
+            startButton.textContent = 'Увімкнути камеру';
+            gestureResult.textContent = 'Покажіть жест у камеру...';
+            
+            const stream = video.srcObject;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            video.srcObject = null;
+            
+           
+            playAnimation('Idle');
+        }
+        
+        
+        function stopAR() {
+            if (arSystem) {
+                arSystem.stop();
+                arSystem = null;
+                arStartButton.textContent = 'Увімкнути AR';
+            }
+        }
+        
+       
+        const HAND_CONNECTIONS = [
+            [0, 1], [1, 2], [2, 3], [3, 4],         // Великий палець
+            [0, 5], [5, 6], [6, 7], [7, 8],         // Вказівний палець
+            [0, 9], [9, 10], [10, 11], [11, 12],    // Середній палець
+            [0, 13], [13, 14], [14, 15], [15, 16],  // Безіменний палець
+            [0, 17], [17, 18], [18, 19], [19, 20],  // Мізинець
+            [1, 5], [5, 9], [9, 13], [13, 17]       // Нижня частина долоні
+        ];
+        
+        
+        startButton.addEventListener('click', () => {
+            if (!isRunning) {
+                start();
+            } else {
+                stop();
+            }
+        });
+        
+        
+        arStartButton.addEventListener('click', () => {
+            if (!arSystem) {
+                startAR();
+            } else {
+                stopAR();
+            }
+        });
+        
+        
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                
+                button.classList.add('active');
+                const tabId = button.getAttribute('data-tab') + '-tab';
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
