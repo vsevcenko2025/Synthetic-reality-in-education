@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <title>3D модель на маркері</title>
+  <title></title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
       html, body {
@@ -29,7 +29,7 @@
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { MindARThree } from 'mindar-image-three';
 
-    // 1. Ініціалізація MindAR
+    
     const mindarThree = new MindARThree({
       container: document.body,
       imageTargetSrc: './markers/Week4.mind'
@@ -37,25 +37,38 @@
 
     const { renderer, scene, camera } = mindarThree;
 
-    // 2. Прив’язка до першого маркера
-    const anchor = mindarThree.addAnchor(0);
+  
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1); 
+    scene.add(ambientLight);
 
-    // 3. Завантаження GLB-моделі
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(0, 1, 1);
+    scene.add(directionalLight);
+
+   
+    const anchor1 = mindarThree.addAnchor(0);
+
+    
     const loader = new GLTFLoader();
-    loader.load('./texture/tiny_frog.glb', (gltf) => {
-  const model = gltf.scene;
+    loader.load('./texture/alien.glb', (gltf) => {
+      const model1 = gltf.scene;
+      model1.scale.set(1, 1, 1); 
+     model1.rotation.y = Math.PI * 2; 
+      anchor1.group.add(model1);
+    });
 
-  // Збільшення масштабу
-  model.scale.set(3, 3, 3);
+    
+    const anchor2 = mindarThree.addAnchor(1);
 
-  // Поворот "передом" до глядача
-  model.rotation.y = Math.PI;
+    
+    loader.load('./texture/spaceship.glb', (gltf) => {
+      const model2 = gltf.scene;
+      model2.scale.set(0.001, 0.001, 0.001); 
+      model2.rotation.y = Math.PI;
+      anchor2.group.add(model2);
+    });
 
-  anchor.group.add(model);
-});
-
-
-    // 4. Запуск сцени
+    
     await mindarThree.start();
     renderer.setAnimationLoop(() => {
       renderer.render(scene, camera);
@@ -63,3 +76,4 @@
   </script>
 </body>
 </html>
+
