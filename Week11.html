@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Solar System XR</title>
+    <title></title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
@@ -162,11 +162,11 @@
         </a-entity>
 
         <a-entity id="solar-system" position="0 0 0">
-            <!-- Сонце -->
+            
             <a-sphere src="#sun" radius="7.7" position="0 0 0"
                 animation="property: rotation; to: 0 360 0; loop: true; dur: 60000"></a-sphere>
 
-            <!-- Орбіти -->
+            
             <a-torus radius="8.7" radius-tubular="0.02" rotation="90 0 0" color="#555" opacity="0.3"></a-torus>
             <a-torus radius="11.4" radius-tubular="0.02" rotation="90 0 0" color="#666" opacity="0.3"></a-torus>
             <a-torus radius="15" radius-tubular="0.02" rotation="90 0 0" color="#777" opacity="0.3"></a-torus>
@@ -176,21 +176,21 @@
             <a-torus radius="150" radius-tubular="0.02" rotation="90 0 0" color="#bbb" opacity="0.3"></a-torus>
             <a-torus radius="200" radius-tubular="0.02" rotation="90 0 0" color="#ccc" opacity="0.3"></a-torus>
 
-            <!-- Меркурій -->
+            
             <a-entity animation="property: rotation; to: 0 360 0; dur: 8800; loop: true; easing: linear">
                 <a-sphere position="8.7 0 0" src="#mercury" radius="0.5" 
                     animation="property: rotation; to: 0 360 0; dur: 3000; loop: true"
                     class="clickable" data-planet="Mercury"></a-sphere>
             </a-entity>
 
-            <!-- Венера -->
+            
             <a-entity animation="property: rotation; to: 0 360 0; dur: 21500; loop: true">
                 <a-sphere position="11.4 0 0" src="#venus" radius="0.9"
                     animation="property: rotation; to: 0 360 0; dur: 3500; loop: true"
                     class="clickable" data-planet="Venus"></a-sphere>
             </a-entity>
 
-            <!-- Земля -->
+            
             <a-entity animation="property: rotation; to: 0 360 0; dur: 39500; loop: true">
                 <a-sphere position="15 0 0" src="#earth" radius="1.1"
                     animation="property: rotation; to: 0 360 0; dur: 3800; loop: true"
@@ -201,19 +201,19 @@
                 </a-sphere>
             </a-entity>
 
-            <!-- Марс -->
+            
             <a-entity animation="property: rotation; to: 0 360 0; dur: 55600; loop: true">
                 <a-sphere position="18.9 0 0" src="#mars" radius="0.6"
                     class="clickable" data-planet="Mars"></a-sphere>
             </a-entity>
 
-            <!-- Юпітер -->
+            
             <a-entity animation="property: rotation; to: 0 360 0; dur: 80300; loop: true">
                 <a-sphere position="48 0 0" src="#jupiter" radius="3.6"
                     class="clickable" data-planet="Jupiter"></a-sphere>
             </a-entity>
 
-            <!-- Сатурн -->
+            
             <a-entity animation="property: rotation; to: 0 360 0; dur: 105600; loop: true">
                 <a-sphere position="89.8 0 0" src="#saturn" radius="3"
                     class="clickable" data-planet="Saturn">
@@ -221,13 +221,13 @@
                 </a-sphere>
             </a-entity>
 
-            <!-- Уран -->
+          
             <a-entity animation="property: rotation; to: 0 360 0; dur: 301100; loop: true">
                 <a-sphere position="150 0 0" src="#uranus" radius="2"
                     class="clickable" data-planet="Uranus"></a-sphere>
             </a-entity>
 
-            <!-- Нептун -->
+            
             <a-entity animation="property: rotation; to: 0 360 0; dur: 600100; loop: true">
                 <a-sphere position="200 0 0" src="#neptune" radius="2"
                     class="clickable" data-planet="Neptune"></a-sphere>
@@ -251,7 +251,7 @@
             const desktopBtn = document.getElementById('desktop-btn');
             const mobileBtn = document.getElementById('mobile-btn');
 
-            // Initialize desktop mode by default
+            
             function initializeDesktopMode() {
                 document.getElementById('desktop-camera').setAttribute('visible', 'true');
                 document.getElementById('mobile-camera').setAttribute('visible', 'false');
@@ -260,7 +260,7 @@
                 statusElement.textContent = 'Status: Desktop Mode';
             }
 
-            // Перевірка підтримки AR
+            
             function checkARSupport() {
                 if (navigator.xr) {
                     return navigator.xr.isSessionSupported('immersive-ar')
@@ -270,7 +270,7 @@
                 return Promise.resolve(false);
             }
 
-            // Ініціалізація
+            
             checkARSupport().then(arSupported => {
                 if (arSupported) {
                     arButton.style.display = 'block';
@@ -278,7 +278,7 @@
                 }
             });
 
-            // Обробник кнопки AR
+            
             arButton.addEventListener('click', function() {
                 scene.enterAR().then(() => {
                     document.querySelector('.non-ar').setAttribute('visible', 'false');
@@ -290,7 +290,7 @@
                 });
             });
 
-            // Desktop Mode
+            
             desktopBtn.addEventListener('click', function() {
                 initializeDesktopMode();
                 if (scene.is('vr-mode') || scene.is('ar-mode')) {
@@ -298,7 +298,7 @@
                 }
             });
 
-            // Mobile VR Mode
+            
             mobileBtn.addEventListener('click', function() {
                 document.getElementById('desktop-camera').setAttribute('visible', 'false');
                 document.getElementById('mobile-camera').setAttribute('visible', 'true');
@@ -306,7 +306,7 @@
                 statusElement.textContent = 'Status: Mobile VR Mode';
             });
 
-            // Інформація про планети
+            
             document.querySelectorAll('.clickable').forEach(planet => {
                 planet.addEventListener('click', function() {
                     const planetName = this.getAttribute('data-planet');
@@ -331,18 +331,18 @@
                 });
             });
 
-            // Закриття інформаційної панелі
+            
             document.querySelector('#info-panel').addEventListener('click', function() {
                 this.setAttribute('visible', 'false');
             });
 
-            // Завантаження сцени
+            
             scene.addEventListener('loaded', function() {
                 document.getElementById('loading').style.display = 'none';
                 initializeDesktopMode();
             });
 
-            // Вихід з VR/AR
+            
             scene.addEventListener('exit-vr', function() {
                 document.querySelector('.non-ar').setAttribute('visible', 'true');
                 document.getElementById('solar-system').setAttribute('scale', '1 1 1');
