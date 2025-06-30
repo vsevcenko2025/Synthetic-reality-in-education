@@ -65,12 +65,12 @@
   </script>
 </head>
 <body>
-  <!-- YouTube -->
+ 
   <div id="youtube-video" class="video-container">
     <div id="youtube-player"></div>
   </div>
 
-  <!-- Vimeo -->
+  
   <div id="vimeo-video" class="video-container">
     <div id="vimeo-player"></div>
   </div>
@@ -109,13 +109,13 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setClearColor(0x000000, 0);
 
-      // Light
+      
       scene.add(new THREE.AmbientLight(0xffffff, 1));
       const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
       dirLight.position.set(1, 1, 1);
       scene.add(dirLight);
 
-      // YouTube
+      
       const youtubePlayer = new YT.Player('youtube-player', {
         videoId: 'RB8RfFshcME',
         playerVars: {
@@ -129,7 +129,7 @@
         }
       });
 
-      // Vimeo
+      
       const vimeoPlayer = new Vimeo.Player('vimeo-player', {
         id: 1097507748,
         width: '100%',
@@ -137,7 +137,7 @@
         controls: false
       });
 
-      // YouTube anchor
+     
       const youtubeAnchor = mindarThree.addAnchor(0);
       youtubeAnchor.group.visible = false;
       youtubeAnchor.onTargetFound = () => {
@@ -157,7 +157,7 @@
         }
       };
 
-      // Vimeo anchor
+      
       const vimeoAnchor = mindarThree.addAnchor(1);
       vimeoAnchor.group.visible = false;
       vimeoAnchor.onTargetFound = () => {
