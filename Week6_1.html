@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title></title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: Arial, sans-serif;
+      color: white;
+      background-color: rgba(0,0,0,0.7);
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 10;
+    }
+    #camera-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0; /* Камера позаду */
+    }
+    video#ar-video {
+      display: none;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1; /* Канвас поверх камери */
+      background: transparent !important;
+      pointer-events: auto; /* Щоб отримувати кліки */
+    }
+    #ar-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: black; /* Якщо хочеш фон */
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+        "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="ar-container">
+    <div id="loading">Завантаження AR...</div>
+    <video id="ar-video" src="./video/Week6.mp4" loop muted playsinline preload="auto"></video>
+    <video id="camera-video" autoplay playsinline></video>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { MindARThree } from 'mindar-image-three';
+
+    const loadingElement = document.getElementById('loading');
+    const arVideo = document.getElementById("ar-video");
+    const cameraVideo = document.getElementById("camera-video");
+    const arContainer = document.getElementById("ar-container");
+
+    async function init() {
+      try {
+       
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'environment',
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+        cameraVideo.srcObject = stream;
+
+        
+        await new Promise((resolve, reject) => {
+          arVideo.addEventListener('loadeddata', resolve);
+          arVideo.addEventListener('error', () => {
+            reject(new Error("Не вдалося завантажити відео"));
+          });
+          if (arVideo.readyState >= 3) resolve();
+        });
+
+        loadingElement.textContent = "Завантаження AR... (відео готове)";
+
+        
+        const mindarThree = new MindARThree({
+          container: arContainer,
+          imageTargetSrc: './markers/Week6.mind',
+          uiLoading: "no",
+          uiScanning: "no",
+          uiError: "no",
+          maxTrack: 2
+        });
+
+        const { renderer, scene, camera } = mindarThree;
+
+        
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0); // Прозорий фон
+        renderer.domElement.style.position = 'absolute';
+        renderer.domElement.style.top = '0';
+        renderer.domElement.style.left = '0';
+
+        
+        scene.add(new THREE.AmbientLight(0xffffff, 1));
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+
+        
+        const videoAnchor = mindarThree.addAnchor(0);
+        const videoTexture = new THREE.VideoTexture(arVideo);
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.format = THREE.RGBAFormat;
+
+        const videoMaterial = new THREE.MeshBasicMaterial({ 
+          map: videoTexture,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.9
+        });
+        
+        const videoGeometry = new THREE.PlaneGeometry(1.6, 0.9);
+        const videoMesh = new THREE.Mesh(videoGeometry, videoMaterial);
+        videoMesh.rotation.x = 0; // прибрати переворот
+
+
+        videoAnchor.group.add(videoMesh);
+
+        videoAnchor.onTargetFound = () => {
+          arVideo.play().catch(err => console.error("Помилка відтворення відео:", err));
+        };
+        videoAnchor.onTargetLost = () => {
+          arVideo.pause();
+        };
+
+        
+        const modelAnchor = mindarThree.addAnchor(1);
+        const loader = new GLTFLoader();
+
+        loader.load('./texture/ship_3p.glb', (gltf) => {
+          const model = gltf.scene;
+          model.scale.set(0.02, 0.02, 0.02);
+          model.rotation.y = Math.PI;
+          modelAnchor.group.add(model);
+
+          
+          const raycaster = new THREE.Raycaster();
+          const mouse = new THREE.Vector2();
+
+          window.addEventListener('click', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObject(model, true);
+            if (intersects.length > 0) {
+              
+              const angleDeg = 45 + Math.random() * 45;
+              const angleRad = THREE.MathUtils.degToRad(angleDeg);
+              model.rotation.y += angleRad;
+            }
+          });
+        }, undefined, (err) => {
+          console.error("Помилка завантаження моделі:", err);
+        });
+
+        
+        await mindarThree.start();
+        loadingElement.style.display = 'none';
+
+        
+        const animate = () => {
+          requestAnimationFrame(animate);
+          renderer.render(scene, camera);
+        };
+        animate();
+
+        
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+      } catch (err) {
+        console.error("Помилка ініціалізації AR:", err);
+        loadingElement.textContent = "Помилка: " + err.message;
+      }
+    }
+
+    
+    window.addEventListener('DOMContentLoaded', () => {
+      init().catch(err => {
+        console.error("Помилка при запуску:", err);
+        loadingElement.textContent = "Критична помилка: " + err.message;
+      });
+    });
+  </script>
+</body>
+</html>
