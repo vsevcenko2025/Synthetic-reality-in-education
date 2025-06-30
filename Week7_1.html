@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AR з океаном та найглибшим місцем</title>
+  <style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    
+  }
+
+  canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .video-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    z-index: 10;
+  }
+
+  #youtube-player,
+  #vimeo-player {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* 🟢 Найважливіше: цей стиль розтягує iframe Vimeo */
+  .video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    border: none;
+  }
+</style>
+
+
+  <!-- YouTube API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <!-- Vimeo API -->
+  <script src="https://player.vimeo.com/api/player.js"></script>
+
+  <!-- Import Map -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+        "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- YouTube -->
+  <div id="youtube-video" class="video-container">
+    <div id="youtube-player"></div>
+  </div>
+
+  <!-- Vimeo -->
+  <div id="vimeo-video" class="video-container">
+    <div id="vimeo-player"></div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { MindARThree } from 'mindar-image-three';
+
+    function waitForAPI() {
+      return new Promise((resolve) => {
+        const checkAPI = () => {
+          if (window.YT && window.Vimeo) {
+            resolve();
+          } else {
+            setTimeout(checkAPI, 100);
+          }
+        };
+        checkAPI();
+      });
+    }
+
+    async function initAR() {
+      await waitForAPI();
+
+      const mindarThree = new MindARThree({
+        container: document.body,
+        imageTargetSrc: './markers/Week7.mind',
+        maxTrack: 2,
+        uiLoading: "no",
+        uiScanning: "no",
+        uiError: "no"
+      });
+
+      const { renderer, scene, camera } = mindarThree;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x000000, 0);
+
+      // Light
+      scene.add(new THREE.AmbientLight(0xffffff, 1));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight.position.set(1, 1, 1);
+      scene.add(dirLight);
+
+      // YouTube
+      const youtubePlayer = new YT.Player('youtube-player', {
+        videoId: 'RB8RfFshcME',
+        playerVars: {
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1
+        },
+        events: {
+          'onReady': (event) => event.target.mute()
+        }
+      });
+
+      // Vimeo
+      const vimeoPlayer = new Vimeo.Player('vimeo-player', {
+        id: 1097507748,
+        width: '100%',
+        muted: true,
+        controls: false
+      });
+
+      // YouTube anchor
+      const youtubeAnchor = mindarThree.addAnchor(0);
+      youtubeAnchor.group.visible = false;
+      youtubeAnchor.onTargetFound = () => {
+        document.getElementById('youtube-video').style.display = 'block';
+        try {
+          youtubePlayer.playVideo();
+        } catch (e) {
+          console.warn('YouTube play error:', e);
+        }
+      };
+      youtubeAnchor.onTargetLost = () => {
+        document.getElementById('youtube-video').style.display = 'none';
+        try {
+          youtubePlayer.pauseVideo();
+        } catch (e) {
+          console.warn('YouTube pause error:', e);
+        }
+      };
+
+      // Vimeo anchor
+      const vimeoAnchor = mindarThree.addAnchor(1);
+      vimeoAnchor.group.visible = false;
+      vimeoAnchor.onTargetFound = () => {
+        document.getElementById('vimeo-video').style.display = 'block';
+        vimeoPlayer.play().catch(e => console.warn('Vimeo play error:', e));
+      };
+      vimeoAnchor.onTargetLost = () => {
+        document.getElementById('vimeo-video').style.display = 'none';
+        vimeoPlayer.pause().catch(e => console.warn('Vimeo pause error:', e));
+      };
+
+      await mindarThree.start();
+      renderer.setAnimationLoop(() => renderer.render(scene, camera));
+    }
+
+    initAR().catch(console.error);
+  </script>
+</body>
+</html>
