@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title></title>
+    <title>AR Viewer</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -124,22 +124,51 @@
 
         function toggleXRMode() {
             if (isARMode) {
-                if (currentSession) currentSession.end();
-                if (arButtonElement) arButtonElement.remove();
+                
+                if (currentSession) {
+                    currentSession.end();
+                    currentSession = null;
+                }
                 document.getElementById('xr-button').textContent = 'Увімкнути AR';
                 logMessage('AR вимкнено');
                 isARMode = false;
             } else {
-                arButtonElement = ARButton.createButton(renderer, {
-                    requiredFeatures: ['hit-test'],
-                    optionalFeatures: ['dom-overlay'],
-                    domOverlay: { root: document.body }
+               
+                if (!navigator.xr) {
+                    logMessage('WebXR не підтримується у вашому браузері');
+                    return;
+                }
+
+                navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+                    if (supported) {
+                        const sessionInit = { 
+                            requiredFeatures: ['hit-test'],
+                            optionalFeatures: ['dom-overlay'],
+                            domOverlay: { root: document.body }
+                        };
+
+                        navigator.xr.requestSession('immersive-ar', sessionInit).then((session) => {
+                            currentSession = session;
+                            renderer.xr.setSession(session);
+                            document.getElementById('xr-button').textContent = 'Вийти з AR';
+                            logMessage('AR увімкнено');
+                            isARMode = true;
+
+                            session.addEventListener('end', () => {
+                                currentSession = null;
+                                document.getElementById('xr-button').textContent = 'Увімкнути AR';
+                                logMessage('AR сесія завершена');
+                                isARMode = false;
+                            });
+                        }).catch((err) => {
+                            logMessage('Помилка запуску AR: ' + err.message);
+                        });
+                    } else {
+                        logMessage('AR не підтримується на цьому пристрої');
+                    }
+                }).catch((err) => {
+                    logMessage('Помилка перевірки підтримки AR: ' + err.message);
                 });
-                arButtonElement.style.display = 'none';
-                document.body.appendChild(arButtonElement);
-                document.getElementById('xr-button').textContent = 'Вийти з AR';
-                logMessage('AR увімкнено');
-                isARMode = true;
             }
         }
 
