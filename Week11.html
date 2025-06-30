@@ -128,7 +128,7 @@
         renderer="antialias: true;"
         loading-screen="enabled: false"
         xr-mode-ui="enabled: false"
-        ar-hit-test="target: local; sourceType: viewer;"
+        ar-hit-test="target: local"
         cursor="rayOrigin: mouse"
         raycaster="objects: .clickable">
 
@@ -146,7 +146,6 @@
     <img id="saturn-ring" src="texture/saturn-ring.png">
     <img id="moon" src="texture/mom.png">
 </a-assets>
-
 
         <a-sky src="#stars" rotation="0 90 0" class="non-ar"></a-sky>
 
@@ -252,6 +251,15 @@
             const desktopBtn = document.getElementById('desktop-btn');
             const mobileBtn = document.getElementById('mobile-btn');
 
+            // Initialize desktop mode by default
+            function initializeDesktopMode() {
+                document.getElementById('desktop-camera').setAttribute('visible', 'true');
+                document.getElementById('mobile-camera').setAttribute('visible', 'false');
+                document.querySelector('a-camera').setAttribute('wasd-controls', 'enabled: true');
+                desktopControls.style.display = 'block';
+                statusElement.textContent = 'Status: Desktop Mode';
+            }
+
             // Перевірка підтримки AR
             function checkARSupport() {
                 if (navigator.xr) {
@@ -266,9 +274,7 @@
             checkARSupport().then(arSupported => {
                 if (arSupported) {
                     arButton.style.display = 'block';
-                    statusElement.textContent = 'Status: Ready (AR available)';
-                } else {
-                    statusElement.textContent = 'Status: Ready';
+                    statusElement.textContent += ' (AR available)';
                 }
             });
 
@@ -286,12 +292,7 @@
 
             // Desktop Mode
             desktopBtn.addEventListener('click', function() {
-                document.getElementById('desktop-camera').setAttribute('visible', 'true');
-                document.getElementById('mobile-camera').setAttribute('visible', 'false');
-                document.querySelector('a-camera').setAttribute('wasd-controls', 'enabled: true');
-                desktopControls.style.display = 'block';
-                statusElement.textContent = 'Status: Desktop Mode';
-                
+                initializeDesktopMode();
                 if (scene.is('vr-mode') || scene.is('ar-mode')) {
                     scene.exitVR();
                 }
@@ -338,7 +339,7 @@
             // Завантаження сцени
             scene.addEventListener('loaded', function() {
                 document.getElementById('loading').style.display = 'none';
-                setupDesktopMode();
+                initializeDesktopMode();
             });
 
             // Вихід з VR/AR
@@ -351,3 +352,27 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
