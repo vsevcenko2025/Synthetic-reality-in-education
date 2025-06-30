@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="uk">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -13,46 +13,6 @@
 
     
     <link rel="stylesheet" href="assets/styles/index.css" />
-
-    
-    <script defer>
-      document.addEventListener("DOMContentLoaded", () => {
-        const fotoPerfil = document.querySelector("#foto-perfil");
-        const robotModel = document.querySelector("#robot-model");
-        const video = document.querySelector("#local-video-element");
-
-        const toggleForward = document.querySelector("#toggle-button");
-        const toggleBack = document.querySelector("#toggle-back-button");
-
-        let state = 0; 
-
-        const updateVisibility = () => {
-          fotoPerfil.setAttribute("visible", state === 0);
-          robotModel.setAttribute("visible", state === 1);
-          video.setAttribute("visible", state === 2);
-
-          
-          const realVideo = document.querySelector("#local-video");
-          if (state === 2) {
-            realVideo.play();
-          } else {
-            realVideo.pause();
-          }
-        };
-
-        toggleForward.addEventListener("click", () => {
-          state = (state + 1) % 3;
-          updateVisibility();
-        });
-
-        toggleBack.addEventListener("click", () => {
-          state = (state - 1 + 3) % 3;
-          updateVisibility();
-        });
-
-        updateVisibility();
-      });
-    </script>
 
     <title></title>
   </head>
@@ -161,13 +121,78 @@
 
        
         <a-entity position="0.065 -0.002 -0.004">
-          <a-image class="clickable" position="-0.52361 -0.4575 -0.04426" height="0.15" width="0.15" src="#icon_github" animation="property: scale; to: 1.1 1.1 1.1; loop: true; dir: alternate"></a-image>
-          <a-image class="clickable" position="-0.30772 -0.4575 -0.04426" height="0.15" width="0.15" src="#icon_linkedin" animation="property: scale; to: 1.1 1.1 1.1; loop: true; dir: alternate"></a-image>
-          <a-image class="clickable" position="-0.07819 -0.4575 -0.04426" height="0.15" width="0.15" src="#icon_twitter" animation="property: scale; to: 1.1 1.1 1.1; loop: true; dir: alternate"></a-image>
-          <a-image class="clickable" position="0.16583 -0.4575 -0.04426" height="0.15" width="0.15" src="#icon_email" animation="property: scale; to: 1.1 1.1 1.1; loop: true; dir: alternate"></a-image>
-          <a-image class="clickable" position="0.40564 -0.4575 -0.04426" height="0.15" width="0.15" src="#icon_web" animation="property: scale; to: 1.1 1.1 1.1; loop: true; dir: alternate"></a-image>
+          <a-image id="github-button" class="clickable" position="-0.52361 -0.4575 -0.04426" height="0.15" width="0.15" src="#icon_github" animation="property: scale; to: 1.1 1.1 1.1; loop: true; dir: alternate"></a-image>
+          <a-image id="linkedin-button" class="clickable" position="-0.30772 -0.4575 -0.04426" height="0.15" width="0.15" src="#icon_linkedin" animation="property: scale; to: 1.1 1.1 1.1; loop: true; dir: alternate"></a-image>
+          <a-image id="twitter-button" class="clickable" position="-0.07819 -0.4575 -0.04426" height="0.15" width="0.15" src="#icon_twitter" animation="property: scale; to: 1.1 1.1 1.1; loop: true; dir: alternate"></a-image>
+          <a-image id="email-button" class="clickable" position="0.16583 -0.4575 -0.04426" height="0.15" width="0.15" src="#icon_email" animation="property: scale; to: 1.1 1.1 1.1; loop: true; dir: alternate"></a-image>
+          <a-image id="web-button" class="clickable" position="0.40564 -0.4575 -0.04426" height="0.15" width="0.15" src="#icon_web" animation="property: scale; to: 1.1 1.1 1.1; loop: true; dir: alternate"></a-image>
         </a-entity>
       </a-entity>
     </a-scene>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+     
+        const fotoPerfil = document.querySelector("#foto-perfil");
+        const robotModel = document.querySelector("#robot-model");
+        const video = document.querySelector("#local-video-element");
+        const toggleForward = document.querySelector("#toggle-button");
+        const toggleBack = document.querySelector("#toggle-back-button");
+
+        let state = 0;
+
+        const updateVisibility = () => {
+          fotoPerfil.setAttribute("visible", state === 0);
+          robotModel.setAttribute("visible", state === 1);
+          video.setAttribute("visible", state === 2);
+
+          const realVideo = document.querySelector("#local-video");
+          if (state === 2) {
+            realVideo.play();
+          } else {
+            realVideo.pause();
+          }
+        };
+
+        toggleForward.addEventListener("click", () => {
+          state = (state + 1) % 3;
+          updateVisibility();
+        });
+
+        toggleBack.addEventListener("click", () => {
+          state = (state - 1 + 3) % 3;
+          updateVisibility();
+        });
+
+        updateVisibility();
+
+        
+        const btnGithub = document.querySelector("#github-button");
+        const btnLinkedin = document.querySelector("#linkedin-button");
+        const btnTwitter = document.querySelector("#twitter-button");
+        const btnEmail = document.querySelector("#email-button");
+        const btnWebsite = document.querySelector("#web-button");
+
+        btnGithub.addEventListener('click', () => {
+          window.open('https://github.com/facebookresearch/differentiable-robot-model', '_blank');
+        });
+
+        btnLinkedin.addEventListener('click', () => {
+          window.open('https://www.instagram.com/robots_event?igsh=b2xid3Y5ZTk1Nmc2', '_blank');
+        });
+
+        btnTwitter.addEventListener('click', () => {
+          window.open('https://x.com/TomLikesRobots?s=09', '_blank');
+        });
+
+        btnEmail.addEventListener('click', () => {
+          window.open('https://docs.google.com/forms/d/e/1FAIpQLSfC7eiiV4H5JSii_Ck5Oc5eGKG_JIr6i-1XH8BT40Unn2pLiw/viewform?usp=header', '_blank');
+        });
+
+        btnWebsite.addEventListener('click', () => {
+          window.open('https://bostondynamics.com/', '_blank');
+        });
+      });
+    </script>
   </body>
 </html>
